@@ -1,0 +1,5 @@
+{
+  "name": "Glass POS - Point of Sale System",
+  "description": "A modern, offline-first Point of Sale (POS) system built with React and TypeScript, featuring a Soft Glass Neumorphism UI. It includes product management, sales, customer tracking, reporting, and multi-language support (English/Arabic).",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,59 @@
+{
+  "name": "point-of-sale-system",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Point of Sale System",
+  "author": "Point of Sale System",
+  "type": "commonjs",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build",
+    "build:electron": "npm run build && electron-builder",
+    "start": "vite",
+    "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "electron": "electron ."
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "chrome-pdf": "^0.5.2",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-network": "^3.0.0-alpha.5",
+    "escpos-usb": "^3.0.0-alpha.4",
+    "framer-motion": "^12.23.24",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "node-thermal-printer": "^4.5.0",
+    "puppeteer-core": "^24.27.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.3.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^26.1.0",
+    "electron-builder": "^24.6.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "glass-pos",
+    "productName": "Glass POS",
+    "directories": {
+      "output": "dist-electron"
+    }
+  }
+}
