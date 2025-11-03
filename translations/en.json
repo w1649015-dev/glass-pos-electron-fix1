@@ -38,6 +38,8 @@
     "card": "Card"
   },
   "sale_error": "An error occurred while processing the sale",
+  "popup_blocked_message": "Please allow pop-ups for this website to print receipts. Look for the pop-up blocked icon in your browser's address bar.",
+  "print_error": "An error occurred while trying to print the receipt",
   "add_product": "Add Product",
   "edit_product": "Edit Product",
   "product_name": "Product Name",
