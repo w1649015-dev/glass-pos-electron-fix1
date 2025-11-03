@@ -20,9 +20,10 @@
         "fullscreen": false
       }
     ],
-    "security": {
+     "security": {
       "csp": null
     }
+    
   },
   "bundle": {
     "active": true,
