@@ -90,7 +90,7 @@ const UserModal = ({
           </div>
           <div>
             <label className="block mb-2 text-sm font-medium">{t('password')}</label>
-            <input name="password" type="password" value={formData.password || ''} placeholder={user.id ? 'Leave blank to keep current' : ''} className="w-full px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input name="password" type="password" value={formData.password || ''} onChange={handleChange} placeholder={user.id ? 'Leave blank to keep current' : ''} className="w-full px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="flex justify-end gap-4 mt-6">
             <NeuButton type="button" onClick={onClose} variant="secondary">{t('cancel')}</NeuButton>
