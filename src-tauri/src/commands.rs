@@ -1,22 +1,23 @@
-use crate::database;
 use crate::printer::{self, Receipt};
+use crate::database;
 
 #[tauri::command]
 pub async fn db_query(sql: String, params: Vec<String>) -> Result<String, String> {
-    // Database query implementation
-    Ok("Query executed".to_string())
+    // Execute a query that returns no results (INSERT, UPDATE, DELETE)
+    database::execute_query(&sql, params)
 }
 
 #[tauri::command]
 pub async fn db_all(sql: String, params: Vec<String>) -> Result<String, String> {
-    // Database query implementation
-    Ok("Query executed".to_string())
+    // Execute a query that returns results (SELECT)
+    database::run_query(&sql, params)
+        .map(|rows| serde_json::to_string(&rows).unwrap())
 }
 
 #[tauri::command]
 pub async fn db_run(sql: String, params: Vec<String>) -> Result<String, String> {
-    // Database run implementation
-    Ok("Command executed".to_string())
+    // General purpose query execution
+    database::execute_query(&sql, params)
 }
 
 #[tauri::command]
@@ -35,7 +36,7 @@ pub async fn db_export() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn db_import(data: String) -> Result<String, String> {
+pub async fn db_import(_data: String) -> Result<String, String> {
     Ok("Import completed".to_string())
 }
 

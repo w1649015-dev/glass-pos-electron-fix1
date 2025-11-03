@@ -17,6 +17,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "electron": "electron .",
+    "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },

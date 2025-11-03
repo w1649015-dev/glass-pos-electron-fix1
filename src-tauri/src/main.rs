@@ -4,11 +4,9 @@ mod commands;
 mod database;
 mod printer;
 
-use tauri::Manager;
-
 fn main() {
     tauri::Builder::default()
-        .setup(|app| {
+        .setup(|_app| {
             // Initialize database
             database::init_database()?;
             
