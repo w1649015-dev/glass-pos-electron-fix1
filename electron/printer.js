@@ -8,6 +8,9 @@ class PrinterManager {
   constructor() {
     this.thermalWidth = 48; // default line width for thermal printer
     this.defaultPrinter = null; // ضع هنا اسم الطابعة الافتراضية لو عندك مثلاً: "EPSON-TM-T20"
+    this.printWindow = null; // نافذة واحدة مُعاد استخدامها
+    this.isProcessing = false; // منع الطباعة المتزامنة
+    this.windowCleanupTimeout = null; // للتحكم بإغلاق النافذة
   }
 
   setupHandlers(mainWindow) {
@@ -103,58 +106,179 @@ class PrinterManager {
     `;
   }
 
+  async initializePrintWindow() {
+    if (!this.printWindow || this.printWindow.isDestroyed()) {
+      console.log('🔧 Creating new print window');
+      this.printWindow = new BrowserWindow({
+        show: false,
+        width: 800,
+        height: 600,
+        webPreferences: {
+          sandbox: false,
+          contextIsolation: false,
+          nodeIntegration: true,
+          backgroundThrottling: false
+        }
+      });
+
+      // إضافة error handlers
+      this.printWindow.webContents.on('crashed', () => {
+        console.error('❌ Print window crashed');
+        this.printWindow = null;
+      });
+
+      this.printWindow.on('closed', () => {
+        console.log('🚪 Print window closed');
+        this.printWindow = null;
+      });
+    }
+  }
+
+  async cleanupPrintWindow() {
+    if (this.windowCleanupTimeout) {
+      clearTimeout(this.windowCleanupTimeout);
+    }
+
+    this.windowCleanupTimeout = setTimeout(() => {
+      if (this.printWindow && !this.printWindow.isDestroyed()) {
+        console.log('🧹 Cleaning up print window');
+        try {
+          this.printWindow.close();
+        } catch (error) {
+          console.error('Error closing print window:', error);
+        }
+        this.printWindow = null;
+      }
+    }, 3000); // 3 ثواني لضمان انتهاء الطباعة
+  }
+
   async printReceipt(mainWindow, data) {
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: { sandbox: false }
-    });
+    // منع الطباعة المتزامنة
+    if (this.isProcessing) {
+      throw new Error('طباعة أخرى قيد التشغيل، انتظر لحظة');
+    }
 
+    this.isProcessing = true;
+    
     try {
+      console.log('🖨️ Starting print process...');
+      
+      // إنشاء أو استخدام نافذة الطباعة
+      await this.initializePrintWindow();
+
       const content = this.formatReceiptContent(data);
-      const htmlFile = path.join(os.tmpdir(), `receipt_${Date.now()}.html`);
-      fs.writeFileSync(htmlFile, content, 'utf8');
+      const timestamp = Date.now();
+      const htmlFile = path.join(os.tmpdir(), `receipt_${timestamp}.html`);
+      
+      // كتابة الملف مع error handling
+      try {
+        fs.writeFileSync(htmlFile, content, 'utf8');
+      } catch (writeError) {
+        throw new Error(`فشل في إنشاء ملف HTML: ${writeError.message}`);
+      }
 
-      await printWindow.loadFile(htmlFile);
+      // تحميل الملف
+      await this.printWindow.loadFile(htmlFile);
+      
+      // انتظار حتى يتم تحميل المحتوى بالكامل
+      await new Promise(resolve => {
+        this.printWindow.webContents.once('did-finish-load', resolve);
+      });
 
-      const pdfPath = path.join(os.tmpdir(), `receipt_${Date.now()}.pdf`);
-      const pdfData = await printWindow.webContents.printToPDF({
+      //const pdfPath = path.join(os.tmpdir(), `receipt_${timestamp}.pdf`);
+      
+      // إنشاء PDF مع error handling محسّن
+      const pdfData = await this.printWindow.webContents.printToPDF({
         marginsType: 1,
         pageSize: { width: 80000, height: 297000 },
-        printBackground: true
+        printBackground: true,
+        landscape: false
       });
 
       fs.writeFileSync(pdfPath, pdfData);
-      console.log(`🖨️ PDF saved at: ${pdfPath}`);
+      console.log(`📄 PDF saved at: ${pdfPath}`);
 
-      // نغلق النافذة بعد التأكد من حفظ الملف
-      setTimeout(() => {
-        if (!printWindow.isDestroyed()) printWindow.destroy();
-      }, 1000);
+      // تنظيف الملف HTML
+      try {
+        fs.unlinkSync(htmlFile);
+      } catch (unlinkError) {
+        console.warn('تحذير: لم يتم حذف ملف HTML:', unlinkError.message);
+      }
 
-      // إذا عندك طابعة محددة، غيّر هنا
+      // طباعة بطريقة آمنة
+      const printResult = await this.safePrint(pdfPath);
+      
+      // تنظيف نافذة الطباعة بعد الانتهاء
+      this.cleanupPrintWindow();
+      
+      return printResult;
+
+    } catch (error) {
+      console.error('🔥 Printing error:', error);
+      throw new Error(`فشل في الطباعة: ${error.message}`);
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  async safePrint(pdfPath) {
+    return new Promise((resolve, reject) => {
+      // تحديد طابعة افتراضية أو الطابعة المحددة
       const lpCommand = this.defaultPrinter
         ? `lp -d "${this.defaultPrinter}" "${pdfPath}"`
         : `lp "${pdfPath}"`;
 
-      return await new Promise((resolve, reject) => {
-        exec(lpCommand, (error, stdout, stderr) => {
-          if (error) {
-            console.error('❌ Print failed:', stderr || error);
-            reject(new Error(stderr || error.message));
-          } else {
-            console.log('✅ Printed successfully:', stdout);
-            resolve(true);
-          }
-        });
+      console.log(`📨 Executing print command: ${lpCommand}`);
+
+      const childProcess = exec(lpCommand, { timeout: 10000 }, (error, stdout, stderr) => {
+        // حذف ملف PDF بعد الطباعة
+        try {
+          fs.unlinkSync(pdfPath);
+        } catch (unlinkError) {
+          console.warn('تحذير: لم يتم حذف ملف PDF:', unlinkError.message);
+        }
+
+        if (error) {
+          console.error('❌ Print command failed:', stderr || error.message);
+          reject(new Error(`فشل في إرسال للطابعة: ${stderr || error.message}`));
+        } else {
+          console.log('✅ Print command successful:', stdout.trim());
+          resolve({
+            success: true,
+            output: stdout.trim(),
+            printer: this.defaultPrinter || 'default'
+          });
+        }
       });
 
-    } catch (error) {
-      console.error('🔥 Printing error:', error);
-      if (!printWindow.isDestroyed()) printWindow.destroy();
-      throw error;
+      // timeout للعملية
+      childProcess.on('error', (error) => {
+        console.error('❌ Process error:', error);
+        reject(new Error(`خطأ في العملية: ${error.message}`));
+      });
+    });
+  }
+
+  // cleanup method للاستدعاء عند إغلاق التطبيق
+  cleanup() {
+    console.log('🧹 Cleaning up PrinterManager...');
+    
+    if (this.windowCleanupTimeout) {
+      clearTimeout(this.windowCleanupTimeout);
+      this.windowCleanupTimeout = null;
     }
+
+    if (this.printWindow && !this.printWindow.isDestroyed()) {
+      try {
+        this.printWindow.close();
+      } catch (error) {
+        console.error('Error during PrinterManager cleanup:', error);
+      }
+      this.printWindow = null;
+    }
+    
+    this.isProcessing = false;
   }
 }
 
 module.exports = PrinterManager;
-
