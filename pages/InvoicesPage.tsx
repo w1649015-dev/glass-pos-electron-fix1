@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Invoice, Sale, Settings, Customer, User } from '../types';
@@ -124,7 +124,7 @@ const printInvoice = (invoice: Invoice, sale: Sale, settings: Settings, customer
 
 const InvoiceDetailsModal = ({ invoice, onClose }: { invoice: Invoice, onClose: () => void }) => {
     const { t } = useI18n();
-    const { sales, customers, users } = useData();
+    const { sales, customers, users } = useDatabase();
     const { settings } = useSettings();
 
     const sale = sales.find(s => s.id === invoice.saleId);
@@ -172,7 +172,7 @@ const InvoiceDetailsModal = ({ invoice, onClose }: { invoice: Invoice, onClose: 
 
 const InvoicesPage = () => {
     const { t } = useI18n();
-    const { invoices, customers } = useData();
+    const { invoices, customers } = useDatabase();
     const { settings } = useSettings();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);

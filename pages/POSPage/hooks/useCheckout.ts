@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 // Fix: Import CustomerId for type casting.
 import { Sale, PaymentDetail, CustomerId } from '../../../types';
-import { useData } from '../../../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useI18n } from '../../../contexts/I18nContext';
 import { useSettings } from '../../../contexts/SettingsContext';
@@ -17,7 +17,7 @@ import { printReceipt } from '../utils/printReceipt';
 export const useCheckout = (cartHook: UseCartReturn) => {
   const { t } = useI18n();
   const { settings } = useSettings();
-  const { addSale } = useData();
+  const { addSale } = useDatabase();
   const { user } = useAuth();
 
   const [isPaymentDialogOpen, setPaymentDialogOpen] = useState(false);

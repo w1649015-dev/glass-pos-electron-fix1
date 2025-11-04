@@ -1,6 +1,6 @@
 // Fix: Replaced placeholder content with a full implementation of the ProductsPage, which provides a UI for viewing, searching, adding, editing, and deleting products.
 import React, { useState, useMemo, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 // Fix: Import Category and ProductId types.
@@ -20,7 +20,7 @@ const ProductModal = ({
 }) => {
   const { t } = useI18n();
   // Fix: Get categories from data context for dropdown.
-  const { suppliers, categories } = useData();
+  const { suppliers, categories } = useDatabase();
   const [formData, setFormData] = useState<Partial<Product>>(
     // Fix: Use 'priceMinor' and 'categoryId' to match Product type.
     product || { name: '', sku: '', priceMinor: 0, stock: 0, lowStockThreshold: 5, categoryId: '', supplierId: '' }
@@ -112,7 +112,7 @@ const ProductModal = ({
 const ProductsPage = () => {
   const { t } = useI18n();
   // Fix: Get categories for displaying category names.
-  const { products, addProduct, updateProduct, deleteProduct, categories } = useData();
+  const { products, addProduct, updateProduct, deleteProduct, categories } = useDatabase();
   const { settings } = useSettings();
   const { can } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');

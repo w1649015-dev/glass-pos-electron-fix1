@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useI18n } from '../contexts/I18nContext';
 // Fix: Import ExpenseId for type safety.
 import { Expense, ExpenseId } from '../types';
@@ -20,7 +20,7 @@ const ExpenseModal = ({
     onSave: (expense: Omit<Expense, 'id'> | Expense) => void;
   }) => {
     const { t } = useI18n();
-    const { suppliers } = useData();
+    const { suppliers } = useDatabase();
     const [formData, setFormData] = useState<Partial<Expense>>(
       // Fix: Use 'amountMinor' to match the Expense type.
       expense || { title: '', amountMinor: 0, category: '', date: new Date().toISOString(), supplierId: '' }
@@ -94,7 +94,7 @@ const ExpenseModal = ({
 
 const ExpensesPage = () => {
     const { t } = useI18n();
-    const { expenses, suppliers, addExpense, updateExpense, deleteExpense } = useData();
+    const { expenses, suppliers, addExpense, updateExpense, deleteExpense } = useDatabase();
     const { user } = useAuth();
     const { settings } = useSettings();
     const [isModalOpen, setIsModalOpen] = useState(false);

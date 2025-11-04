@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 
 // Fix: Changed named import to default import for GlassCard.
@@ -23,9 +23,9 @@ import { useCheckout } from './POSPage/hooks/useCheckout';
  * - The UI is split into logical components like `ProductGrid` and `Cart`.
  */
 const POSPage: React.FC = () => {
-  const { products, customers } = useData();
+  const { products, customers } = useDatabase();
   const { user } = useAuth();
-  const { getActiveShiftForUser } = useData();
+  const { getActiveShiftForUser } = useDatabase();
 
   const activeShift = user ? getActiveShiftForUser(user.id) : null;
 

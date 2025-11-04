@@ -9,8 +9,8 @@ import { PaymentDetail } from '../../../types';
 import GlassCard from '../../../components/ui/GlassCard';
 // Fix: Changed named import to default import for NeuButton.
 import NeuButton from '../../../components/ui/NeuButton';
-// Fix: Added missing import for useData.
-import { useData } from '../../../contexts/DataContext';
+// Fix: Added missing import for useDatabase.
+import { useDatabase } from '@/contexts/DatabaseContext';
 
 /**
  * A reusable numeric keypad component for touch-based input.
@@ -58,7 +58,7 @@ export const PaymentDialog = ({
   const [cashAmount, setCashAmount] = useState('');
   const [cardAmount, setCardAmount] = useState('');
   const [activeInput, setActiveInput] = useState<'cash' | 'card'>('cash');
-  const { customers } = useData();
+  const { customers } = useDatabase();
   const [customerId, setCustomerId] = useState<string>('');
 
   // Fix: Use 'amountMinor' for calculations.

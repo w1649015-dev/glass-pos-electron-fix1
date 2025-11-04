@@ -1,183 +1,412 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
-import { useI18n } from '../contexts/I18nContext';
-// Fix: Import CustomerId for type safety.
-import { Customer, CustomerId } from '../types';
-import GlassCard from '../components/ui/GlassCard';
-import NeuButton from '../components/ui/NeuButton';
+// CustomersPage.tsx - إدارة العملاء
+import React, { useState, useEffect } from 'react';
+import { useDatabase } from '@/contexts/DatabaseContext';
+import { Customer, CustomerId } from '@/types';
+import { PlusIcon, PencilIcon, TrashIcon, UserIcon, PhoneIcon, EnvelopeIcon } from '@/components/icons';
 
-const CustomerModal = ({
-  customer,
-  onClose,
-  onSave,
-}: {
-  customer: Partial<Customer> | null;
-  onClose: () => void;
-  onSave: (customer: Omit<Customer, 'id'> | Customer) => void;
-}) => {
-  const { t } = useI18n();
-  const [formData, setFormData] = useState<Partial<Customer>>(
-    customer || { name: '', phone: '', email: '' }
-  );
+interface CustomerFormData {
+  name: string;
+  phone: string;
+  email: string;
+  notes: string;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name) {
-      alert(t('fill_required_fields'));
-      return;
-    }
-    onSave(formData as Omit<Customer, 'id'> | Customer);
-  };
-
-  if (!customer) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <GlassCard className="w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6">{customer.id ? t('edit_customer') : t('add_customer')}</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block mb-2 text-sm font-medium">{t('customer_name')}</label>
-            <input name="name" value={formData.name || ''} onChange={handleChange} className="w-full px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500" required autoFocus />
-          </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium">{t('phone')}</label>
-            <input name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium">{t('email')}</label>
-            <input name="email" type="email" value={formData.email || ''} onChange={handleChange} className="w-full px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="flex justify-end gap-4 mt-6">
-            <NeuButton type="button" onClick={onClose} variant="secondary">{t('cancel')}</NeuButton>
-            <NeuButton type="submit" variant="primary">{t('save')}</NeuButton>
-          </div>
-        </form>
-      </GlassCard>
-    </div>
-  );
-};
-
-const CustomersPage = () => {
-  const { t } = useI18n();
-  const { customers, addCustomer, updateCustomer, deleteCustomer } = useData();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState<Partial<Customer> | null>(null);
-
-  useEffect(() => {
-    // Fix: Correctly call createIcons on window.lucide and add ts-ignore to prevent type errors.
-    // @ts-ignore
-    if (window.lucide) {
-      // @ts-ignore
-      window.lucide.createIcons();
-    }
+export default function CustomersPage() {
+  const { customers, createCustomer, getCustomers, updateCustomer, deleteCustomer, isLoading, error } = useDatabase();
+  const [showModal, setShowModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [formData, setFormData] = useState<CustomerFormData>({
+    name: '',
+    phone: '',
+    email: '',
+    notes: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'phone' | 'email'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const filteredCustomers = useMemo(() =>
-    customers.filter(c =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.phone && c.phone.includes(searchTerm))
-    ), [customers, searchTerm]
-  );
+  // Load customers on component mount
+  useEffect(() => {
+    getCustomers();
+  }, []);
 
-  const handleAdd = () => {
-    setCurrentCustomer({});
-    setIsModalOpen(true);
+  // Filter and sort customers
+  const filteredAndSortedCustomers = customers
+    .filter(customer =>
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (customer.phone && customer.phone.includes(searchQuery)) ||
+      (customer.email && customer.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a, b) => {
+      let aValue = a[sortBy] || '';
+      let bValue = b[sortBy] || '';
+      
+      if (sortBy === 'name') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue, 'ar')
+          : bValue.localeCompare(aValue, 'ar');
+      }
+      
+      return sortOrder === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    });
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingCustomer) {
+        // Update existing customer
+        await updateCustomer(editingCustomer.id, formData);
+      } else {
+        // Create new customer
+        await createCustomer(formData);
+      }
+      
+      // Reset form and close modal
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        notes: ''
+      });
+      setEditingCustomer(null);
+      setShowModal(false);
+      
+    } catch (error) {
+      console.error('Customer operation failed:', error);
+      alert('فشل في حفظ بيانات العميل');
+    }
   };
 
+  // Handle edit
   const handleEdit = (customer: Customer) => {
-    setCurrentCustomer(customer);
-    setIsModalOpen(true);
+    setEditingCustomer(customer);
+    setFormData({
+      name: customer.name,
+      phone: customer.phone || '',
+      email: customer.email || '',
+      notes: customer.notes || ''
+    });
+    setShowModal(true);
   };
 
-  // Fix: Correctly type the id as CustomerId.
-  const handleDelete = (id: CustomerId) => {
-    if (window.confirm(t('confirm_delete_customer'))) {
-      if(!deleteCustomer(id)){
-        alert(t('customer_in_use_error'));
+  // Handle delete
+  const handleDelete = async (customerId: CustomerId) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا العميل؟ لن يكون بإستطاعك التراجع عن هذا الإجراء.')) {
+      try {
+        await deleteCustomer(customerId);
+      } catch (error) {
+        console.error('Delete customer failed:', error);
+        alert('فشل في حذف العميل. تأكد من عدم وجود مبيعات مرتبطة بهذا العميل.');
       }
     }
   };
 
-  const handleSave = (customerData: Omit<Customer, 'id'> | Customer) => {
-    if ('id' in customerData && customerData.id) {
-      updateCustomer(customerData as Customer);
-    } else {
-      addCustomer(customerData as Omit<Customer, 'id'>);
-    }
-    handleCloseModal();
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingCustomer(null);
+    setFormData({
+      name: '',
+      phone: '',
+      email: '',
+      notes: ''
+    });
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setCurrentCustomer(null);
+  // Handle sorting
+  const handleSort = (field: 'name' | 'phone' | 'email') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">خطأ: {error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">{t('customers')}</h1>
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <UserIcon className="h-6 w-6" />
+            إدارة العملاء
+          </h1>
+          <p className="text-gray-600 mt-1">
+            إجمالي العملاء: {customers.length}
+          </p>
+        </div>
+        
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        >
+          <PlusIcon className="h-4 w-4" />
+          إضافة عميل جديد
+        </button>
+      </div>
 
-      <GlassCard className="mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+      {/* Search and Filters */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="md:col-span-2">
           <input
             type="text"
-            placeholder={t('search_customers')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:max-w-sm px-4 py-2 bg-white/50 dark:bg-black/50 rounded-lg border-none shadow-neumorphic-light-inset dark:shadow-neumorphic-dark-inset focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="البحث بالاسم، الهاتف، أو البريد الإلكتروني..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <NeuButton onClick={handleAdd} variant="primary" className="w-full md:w-auto">{t('add_customer')}</NeuButton>
         </div>
-      </GlassCard>
+        
+        <div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'name' | 'phone' | 'email')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="name">ترتيب بالاسم</option>
+            <option value="phone">ترتيب بالهاتف</option>
+            <option value="email">ترتيب بالبريد</option>
+          </select>
+        </div>
+        
+        <div>
+          <button
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors"
+          >
+            {sortOrder === 'asc' ? 'تصاعدي' : 'تنازلي'}
+          </button>
+        </div>
+      </div>
 
-      <GlassCard>
+      {/* Customers List */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">قائمة العملاء</h2>
+        </div>
+        
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="p-4">{t('name')}</th>
-                <th className="p-4">{t('phone')}</th>
-                <th className="p-4">{t('email')}</th>
-                <th className="p-4 text-center">{t('actions')}</th>
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th 
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('name')}
+                >
+                  الاسم {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('phone')}
+                >
+                  الهاتف {sortBy === 'phone' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('email')}
+                >
+                  البريد الإلكتروني {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ملاحظات
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  تاريخ الإنشاء
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الإجراءات
+                </th>
               </tr>
             </thead>
-            <tbody>
-              {filteredCustomers.length > 0 ? filteredCustomers.map(customer => (
-                <tr key={customer.id} className="border-b border-white/20 last:border-b-0 hover:bg-white/10 dark:hover:bg-black/10 transition-colors">
-                  <td className="p-4 font-semibold">{customer.name}</td>
-                  <td className="p-4">{customer.phone}</td>
-                  <td className="p-4">{customer.email}</td>
-                  <td className="p-4">
-                    <div className="flex gap-2 justify-center">
-                      <button onClick={() => handleEdit(customer)} className="p-2 hover:bg-white/20 rounded-full" title={t('edit')}>
-                        <i data-lucide="pencil" className="w-4 h-4"></i>
-                      </button>
-                      <button onClick={() => handleDelete(customer.id)} className="p-2 hover:bg-white/20 rounded-full text-red-500" title={t('delete')}>
-                        <i data-lucide="trash-2" className="w-4 h-4"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAndSortedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center p-8 text-gray-500">
-                    {t('no_customers_found')}
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    {searchQuery ? 'لا توجد نتائج للبحث' : 'لا يوجد عملاء بعد'}
+                    {!searchQuery && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => setShowModal(true)}
+                          className="text-blue-500 hover:text-blue-600 underline"
+                        >
+                          إضافة عميل جديد
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
+              ) : (
+                filteredAndSortedCustomers.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-gray-600" />
+                        </div>
+                        <div className="mr-3">
+                          <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {customer.phone ? (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <PhoneIcon className="h-4 w-4 text-gray-400 mr-1" />
+                          {customer.phone}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {customer.email ? (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <EnvelopeIcon className="h-4 w-4 text-gray-400 mr-1" />
+                          {customer.email}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate" title={customer.notes}>
+                        {customer.notes || '-'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(customer.createdAt || '').toLocaleDateString('ar-SA')}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(customer)}
+                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                          title="تعديل"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(customer.id)}
+                          className="p-1 text-red-600 hover:bg-red-100 rounded"
+                          title="حذف"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
-      </GlassCard>
+      </div>
 
-      {isModalOpen && <CustomerModal customer={currentCustomer} onClose={handleCloseModal} onSave={handleSave} />}
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-screen overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {editingCustomer ? 'تعديل بيانات العميل' : 'إضافة عميل جديد'}
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  اسم العميل *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="مثال: أحمد محمد"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  رقم الهاتف
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="مثال: +966501234567"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  البريد الإلكتروني
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="مثال: ahmed@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ملاحظات
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="ملاحظات إضافية عن العميل..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  {editingCustomer ? 'تحديث' : 'إضافة'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default CustomersPage;
+}

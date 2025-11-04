@@ -1,6 +1,6 @@
 // Fix: Replaced placeholder content with a full implementation of the UsersPage, which provides a UI for viewing, adding, editing, and deleting users (for admins only).
 import React, { useState, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 // Fix: Import UserId type
@@ -104,7 +104,7 @@ const UserModal = ({
 
 const UsersPage = () => {
   const { t } = useI18n();
-  const { users, addUser, updateUser, deleteUser } = useData();
+  const { users, addUser, updateUser, deleteUser } = useDatabase();
   const { user: currentLoggedUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Fix: Changed state type from Partial<User> to UserFormData to match modal props.

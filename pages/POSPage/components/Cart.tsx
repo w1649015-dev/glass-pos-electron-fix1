@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useI18n } from '../../../contexts/I18nContext';
 import { useSettings } from '../../../contexts/SettingsContext';
-import { useData } from '../../../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 // Fix: Changed named import to default import for NeuButton.
 import NeuButton from '../../../components/ui/NeuButton';
 import { UseCartReturn } from '../hooks/useCart';
@@ -41,7 +41,7 @@ const CartListItem: React.FC<{ item: CartItem; currency: string; onUpdate: (id: 
 export const Cart: React.FC<{ cartHook: UseCartReturn; onCheckout: (customerId: string) => void; }> = ({ cartHook, onCheckout }) => {
   const { t } = useI18n();
   const { settings } = useSettings();
-  const { customers } = useData();
+  const { customers } = useDatabase();
   const { cartItems, totals, updateQuantity, setDiscount, discount } = cartHook;
   const [customerId, setCustomerId] = useState('');
   

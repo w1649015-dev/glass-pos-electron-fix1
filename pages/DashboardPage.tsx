@@ -3,7 +3,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useI18n } from '../contexts/I18nContext';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import GlassCard from '../components/ui/GlassCard';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -24,7 +24,7 @@ const StatCard = ({ title, value, icon }: { title: string, value: string | numbe
 
 const DashboardPage = () => {
   const { t } = useI18n();
-  const { sales, customers, products } = useData();
+  const { sales, customers, products } = useDatabase();
   const { settings } = useSettings();
 
   const today = new Date();

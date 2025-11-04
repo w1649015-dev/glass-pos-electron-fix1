@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useI18n } from '../contexts/I18nContext';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import GlassCard from '../components/ui/GlassCard';
@@ -19,7 +19,7 @@ declare const XLSX: any;
 
 const ReportsPage = () => {
     const { t } = useI18n();
-    const { sales, expenses, products, users, categories } = useData();
+    const { sales, expenses, products, users, categories } = useDatabase();
     const { settings } = useSettings();
     const { can } = useAuth();
 

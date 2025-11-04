@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useSettings } from '../contexts/SettingsContext';
 // Fix: Add SaleId to imports for type safety.
@@ -142,7 +142,7 @@ const printReceipt = (sale: Sale, settings: Settings, t: (key: string) => string
 const SaleDetailsModal = ({ sale, onClose, onPrint }: { sale: Sale, onClose: () => void, onPrint: () => void }) => {
     const { t } = useI18n();
     const { settings } = useSettings();
-    const { customers, users } = useData();
+    const { customers, users } = useDatabase();
 
     const customer = customers.find(c => c.id === sale.customerId);
     const user = users.find(u => u.id === sale.userId);
@@ -198,7 +198,7 @@ const SaleDetailsModal = ({ sale, onClose, onPrint }: { sale: Sale, onClose: () 
 
 const SalesPage = () => {
     const { t } = useI18n();
-    const { sales, customers, users, deleteSale } = useData();
+    const { sales, customers, users, deleteSale } = useDatabase();
     const { settings } = useSettings();
     const { can } = useAuth();
 

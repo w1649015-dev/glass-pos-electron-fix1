@@ -23,6 +23,12 @@ fn main() {
             commands::db_run,
             commands::db_export,
             commands::db_import,
+
+                        
+            // User management
+            commands::login_user,
+            commands::get_users,
+            commands::create_user,
             
             // Printer commands
             commands::print_receipt,

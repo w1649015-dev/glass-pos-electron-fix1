@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { useData } from '../contexts/DataContext';
+import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -66,7 +66,7 @@ const ShiftPage = () => {
     const { t } = useI18n();
     const { user } = useAuth();
     const { settings } = useSettings();
-    const { shifts, startShift, closeShift, getActiveShiftForUser } = useData();
+    const { shifts, startShift, closeShift, getActiveShiftForUser } = useDatabase();
 
     const [openingBalance, setOpeningBalance] = useState('');
     const [countedCash, setCountedCash] = useState('');
