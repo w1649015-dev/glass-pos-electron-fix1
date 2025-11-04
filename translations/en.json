@@ -235,5 +235,8 @@
   "add_category": "Add Category",
   "edit_category": "Edit Category",
   "parent_category": "Parent Category",
-  "no_parent": "No Parent (Top Level)"
+  "no_parent": "No Parent (Top Level)",
+  "download_pdf": "Download PDF",
+  "pdf_generation_error": "Error generating PDF file",
+  "print": "Print"
 }

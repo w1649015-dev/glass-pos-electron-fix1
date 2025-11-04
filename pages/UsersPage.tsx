@@ -4,7 +4,7 @@ import { useData } from '../contexts/DataContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 // Fix: Import UserId type
-import { User, UserId } from '../types';
+import { User, UserId, UserRole } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import NeuButton from '../components/ui/NeuButton';
 
@@ -180,7 +180,7 @@ const UsersPage = () => {
         const updatedUser: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role || 'cashier',
+          role: userData.role || UserRole.CASHIER,
           passwordHash: originalUser.passwordHash // Keep old hash by default
         };
 
